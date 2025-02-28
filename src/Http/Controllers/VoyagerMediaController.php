@@ -227,7 +227,7 @@ class VoyagerMediaController extends Controller
         $this->authorize('browse_media');
     
         // Validar extensiones permitidas
-        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'docx', 'xlsx', 'zip', 'txt'];
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'docx', 'xlsx', 'zip', 'txt','webp','svg'];
         $extension = strtolower($request->file->getClientOriginalExtension());
     
         if (!in_array($extension, $allowedExtensions)) {
