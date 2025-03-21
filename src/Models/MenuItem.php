@@ -19,7 +19,7 @@ class MenuItem extends Model
 
     protected $guarded = [];
 
-    protected $translatable = ['title'];
+    protected $translatable = ['title','url'];
 
     public static function boot()
     {
