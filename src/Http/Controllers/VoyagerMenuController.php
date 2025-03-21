@@ -26,6 +26,7 @@ class VoyagerMenuController extends Controller
         $this->authorize('delete', $item);
 
         $item->deleteAttributeTranslation('title');
+        $item->deleteAttributeTranslation('url');
 
         $item->destroy($id);
 
@@ -61,7 +62,8 @@ class VoyagerMenuController extends Controller
 
         // Save menu translations
         if ($_isTranslatable) {
-            $menuItem->setAttributeTranslations('title', $trans, true);
+            $menuItem->setAttributeTranslations('title', $trans[0], true);
+            $menuItem->setAttributeTranslations('url', $trans[1], true);
         }
 
         return redirect()
@@ -87,11 +89,11 @@ class VoyagerMenuController extends Controller
             $trans = $this->prepareMenuTranslations($data);
 
             // Save menu translations
-            $menuItem->setAttributeTranslations('title', $trans, true);
+            $menuItem->setAttributeTranslations('title', $trans[0], true);
+            $url=$menuItem->setAttributeTranslations('url', $trans[1], true);
         }
-
         $menuItem->update($data);
-
+        
         return redirect()
             ->route('voyager.menus.builder', [$menuItem->menu_id])
             ->with([
@@ -119,6 +121,7 @@ class VoyagerMenuController extends Controller
                 $this->orderMenu($menuItem->children, $item->id);
             }
         }
+        
     }
 
     protected function prepareParameters($parameters)
@@ -150,13 +153,16 @@ class VoyagerMenuController extends Controller
     protected function prepareMenuTranslations(&$data)
     {
         $trans = json_decode($data['title_i18n'], true);
+        $trans_url = json_decode($data['url_i18n'], true);
 
         // Set field value with the default locale
         $data['title'] = $trans[config('voyager.multilingual.default', 'en')];
-
+        $data['url'] = $trans_url[config('voyager.multilingual.default', 'en')];
+        
         unset($data['title_i18n']);     // Remove hidden input holding translations
+        unset($data['url_i18n']);     // Remove hidden input holding translations
         unset($data['i18n_selector']);  // Remove language selector input radio
 
-        return $trans;
+        return array($trans,$trans_url);
     }
 }
