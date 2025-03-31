@@ -10,6 +10,7 @@ use TCG\Voyager\Database\Types\Type;
 use Doctrine\DBAL\Connection as DoctrineConnection;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Doctrine\DBAL\Schema\Table;
+use Doctrine\DBAL\Platforms\SqlitePlatform;
 
 abstract class SchemaManager
 {
@@ -76,16 +77,16 @@ abstract class SchemaManager
     {
         $schemaManager = static::manager();
         $platform = static::getDatabasePlatform();
-
+    
         $columns = $schemaManager->listTableColumns($tableName);
-
+    
         $foreignKeys = [];
-        if ($platform->supportsForeignKeyConstraints()) {
+        if (!$platform instanceof SqlitePlatform) {
             $foreignKeys = $schemaManager->listTableForeignKeys($tableName);
         }
-
+    
         $indexes = $schemaManager->listTableIndexes($tableName);
-
+    
         return new Table($tableName, $columns, $indexes, [], $foreignKeys, []);
     }
 
