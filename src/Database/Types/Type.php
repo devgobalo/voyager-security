@@ -3,6 +3,10 @@
 namespace TCG\Voyager\Database\Types;
 
 use Doctrine\DBAL\Platforms\AbstractPlatform as DoctrineAbstractPlatform;
+use Doctrine\DBAL\Platforms\MySQLPlatform;
+use Doctrine\DBAL\Platforms\MySQL80Platform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Doctrine\DBAL\Types\Type as DoctrineType;
 use TCG\Voyager\Database\Platforms\Platform;
 use TCG\Voyager\Database\Schema\SchemaManager;
@@ -19,10 +23,6 @@ abstract class Type extends DoctrineType
     public const NAME = 'UNDEFINED_TYPE_NAME';
     public const NOT_SUPPORTED = 'notSupported';
     public const NOT_SUPPORT_INDEX = 'notSupportIndex';
-
-    // todo: make sure this is not overwrting DoctrineType properties
-
-    // Note: length, precision and scale need default values manually
 
     public function getName()
     {
@@ -49,9 +49,10 @@ abstract class Type extends DoctrineType
         }
 
         $platform = SchemaManager::getDatabasePlatform();
+        $platformName = static::resolvePlatformName($platform);
 
         static::$platformTypes = Platform::getPlatformTypes(
-            $platform->getName(),
+            $platformName,
             static::getPlatformTypeMapping($platform)
         );
 
@@ -82,7 +83,7 @@ abstract class Type extends DoctrineType
         }
 
         $platform = SchemaManager::getDatabasePlatform();
-        $platformName = ucfirst($platform->getName());
+        $platformName = static::resolvePlatformName($platform);
 
         $customTypes = array_merge(
             static::getPlatformCustomTypes('Common'),
@@ -114,7 +115,6 @@ abstract class Type extends DoctrineType
 
         Platform::registerPlatformCustomTypeOptions($platformName);
 
-        // Add the custom options to the types
         foreach (static::$customTypeOptions as $option) {
             foreach ($option['types'] as $type) {
                 if (static::hasType($type)) {
@@ -175,20 +175,20 @@ abstract class Type extends DoctrineType
     {
         $types = static::getTypeCategories();
 
-        // Numbers
         static::registerCustomOption('default', [
             'type' => 'number',
             'step' => 'any',
         ], $types['numbers']);
 
-        // Date and Time
         static::registerCustomOption('default', [
             'type' => 'date',
         ], 'date');
+
         static::registerCustomOption('default', [
             'type' => 'time',
             'step' => '1',
         ], 'time');
+
         static::registerCustomOption('default', [
             'type' => 'number',
             'min'  => '0',
@@ -227,95 +227,34 @@ abstract class Type extends DoctrineType
         }
 
         $numbers = [
-            'boolean',
-            'tinyint',
-            'smallint',
-            'mediumint',
-            'integer',
-            'int',
-            'bigint',
-            'decimal',
-            'numeric',
-            'money',
-            'float',
-            'real',
-            'double',
-            'double precision',
+            'boolean', 'tinyint', 'smallint', 'mediumint', 'integer', 'int',
+            'bigint', 'decimal', 'numeric', 'money', 'float', 'real', 'double', 'double precision',
         ];
 
         $strings = [
-            'char',
-            'character',
-            'varchar',
-            'character varying',
-            'string',
-            'guid',
-            'uuid',
-            'tinytext',
-            'text',
-            'mediumtext',
-            'longtext',
-            'tsquery',
-            'tsvector',
-            'xml',
+            'char', 'character', 'varchar', 'character varying', 'string', 'guid', 'uuid',
+            'tinytext', 'text', 'mediumtext', 'longtext', 'tsquery', 'tsvector', 'xml',
         ];
 
         $datetime = [
-            'date',
-            'datetime',
-            'year',
-            'time',
-            'timetz',
-            'timestamp',
-            'timestamptz',
-            'datetimetz',
-            'dateinterval',
-            'interval',
+            'date', 'datetime', 'year', 'time', 'timetz', 'timestamp', 'timestamptz',
+            'datetimetz', 'dateinterval', 'interval',
         ];
 
-        $lists = [
-            'enum',
-            'set',
-            'simple_array',
-            'array',
-            'json',
-            'jsonb',
-            'json_array',
-        ];
+        $lists = ['enum', 'set', 'simple_array', 'array', 'json', 'jsonb', 'json_array'];
 
         $binary = [
-            'bit',
-            'bit varying',
-            'binary',
-            'varbinary',
-            'tinyblob',
-            'blob',
-            'mediumblob',
-            'longblob',
-            'bytea',
+            'bit', 'bit varying', 'binary', 'varbinary', 'tinyblob', 'blob', 'mediumblob', 'longblob', 'bytea',
         ];
 
-        $network = [
-            'cidr',
-            'inet',
-            'macaddr',
-            'txid_snapshot',
-        ];
+        $network = ['cidr', 'inet', 'macaddr', 'txid_snapshot'];
 
         $geometry = [
-            'geometry',
-            'point',
-            'linestring',
-            'polygon',
-            'multipoint',
-            'multilinestring',
-            'multipolygon',
-            'geometrycollection',
+            'geometry', 'point', 'linestring', 'polygon', 'multipoint',
+            'multilinestring', 'multipolygon', 'geometrycollection',
         ];
 
-        $objects = [
-            'object',
-        ];
+        $objects = ['object'];
 
         static::$typeCategories = [
             'numbers'  => $numbers,
@@ -329,5 +268,22 @@ abstract class Type extends DoctrineType
         ];
 
         return static::$typeCategories;
+    }
+
+    protected static function resolvePlatformName(DoctrineAbstractPlatform $platform): string
+    {
+        if ($platform instanceof MySQLPlatform || $platform instanceof MySQL80Platform) {
+            return 'Mysql';
+        }
+
+        if ($platform instanceof PostgreSQLPlatform) {
+            return 'Postgres';
+        }
+
+        if ($platform instanceof SqlitePlatform) {
+            return 'Sqlite';
+        }
+
+        return 'Common';
     }
 }
