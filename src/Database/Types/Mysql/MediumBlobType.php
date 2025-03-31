@@ -9,7 +9,7 @@ class MediumBlobType extends Type
 {
     public const NAME = 'mediumblob';
 
-    public function getSQLDeclaration(array $field, AbstractPlatform $platform)
+    public function getSQLDeclaration(array $field, AbstractPlatform $platform): string
     {
         return 'mediumblob';
     }
