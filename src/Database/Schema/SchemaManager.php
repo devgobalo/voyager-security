@@ -2,10 +2,13 @@
 
 namespace TCG\Voyager\Database\Schema;
 
+use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Schema\SchemaException;
 use Doctrine\DBAL\Schema\Table as DoctrineTable;
 use Illuminate\Support\Facades\DB;
 use TCG\Voyager\Database\Types\Type;
+use Doctrine\DBAL\Connection as DoctrineConnection;
+use Doctrine\DBAL\Schema\AbstractSchemaManager;
 
 abstract class SchemaManager
 {
@@ -16,14 +19,38 @@ abstract class SchemaManager
         return static::manager()->$method(...$args);
     }
 
-    public static function manager()
+    public static function manager(): AbstractSchemaManager
     {
-        return DB::connection()->getDoctrineSchemaManager();
+        $laravelConnection = DB::connection();
+
+        $config = [
+            'dbname'   => $laravelConnection->getDatabaseName(),
+            'user'     => $laravelConnection->getConfig('username'),
+            'password' => $laravelConnection->getConfig('password'),
+            'host'     => $laravelConnection->getConfig('host'),
+            'driver'   => 'pdo_mysql',
+            'charset'  => 'utf8mb4',
+        ];
+
+        $doctrineConnection = DriverManager::getConnection($config);
+
+        return $doctrineConnection->createSchemaManager();
     }
 
-    public static function getDatabaseConnection()
+    public static function getDatabaseConnection(): DoctrineConnection
     {
-        return DB::connection()->getDoctrineConnection();
+        $laravelConnection = DB::connection();
+
+        $config = [
+            'dbname'   => $laravelConnection->getDatabaseName(),
+            'user'     => $laravelConnection->getConfig('username'),
+            'password' => $laravelConnection->getConfig('password'),
+            'host'     => $laravelConnection->getConfig('host'),
+            'driver'   => 'pdo_mysql',
+            'charset'  => 'utf8mb4',
+        ];
+
+        return DriverManager::getConnection($config);
     }
 
     public static function tableExists($table)
