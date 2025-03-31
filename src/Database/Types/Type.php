@@ -32,11 +32,15 @@ abstract class Type extends DoctrineType
     public static function toArray(DoctrineType $type)
     {
         $customTypeOptions = $type->customOptions ?? [];
-
+    
+        $typeClass = class_basename(get_class($type));
+        $typeName = strtolower(str_replace('Type', '', $typeClass)); // ejemplo: IntegerType → integer
+    
         return array_merge([
-            'name' => $type->getName(),
+            'name' => $typeName,
         ], $customTypeOptions);
     }
+
 
     public static function getPlatformTypes()
     {
