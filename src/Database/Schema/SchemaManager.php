@@ -90,32 +90,38 @@ abstract class SchemaManager
         return new Table($tableName, $columns, $indexes, [], $foreignKeys, []);
     }
 
-    public static function describeTable($tableName)
+   public static function describeTable($tableName)
     {
         Type::registerCustomPlatformTypes();
-
+    
         $table = static::listTableDetails($tableName);
-
-        return collect($table->columns)->map(function ($column) use ($table) {
+    
+        return collect($table->getColumns())->map(function ($column) use ($table) {
             $columnArr = Column::toArray($column);
-
+    
             $columnArr['field'] = $columnArr['name'];
-            $columnArr['type'] = $columnArr['type']['name'];
+            $columnArr['type'] = strtolower(class_basename(get_class($column->getType())));
 
+    
             $columnArr['indexes'] = [];
             $columnArr['key'] = null;
-            if ($columnArr['indexes'] = $table->getColumnsIndexes($columnArr['name'], true)) {
-                foreach ($columnArr['indexes'] as $name => $index) {
-                    $columnArr['indexes'][$name] = Index::toArray($index);
+            
+            foreach ($table->getIndexes() as $index) {
+                if (in_array($columnArr['name'], $index->getColumns())) {
+                    $columnArr['indexes'][$index->getName()] = Index::toArray($index);
                 }
-
+            }
+            
+            if (!empty($columnArr['indexes'])) {
                 $indexType = array_values($columnArr['indexes'])[0]['type'];
                 $columnArr['key'] = substr($indexType, 0, 3);
             }
 
+    
             return $columnArr;
         });
     }
+
 
     public static function listTableColumnNames($tableName)
     {
