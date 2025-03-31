@@ -9,7 +9,7 @@ class TinyBlobType extends Type
 {
     public const NAME = 'tinyblob';
 
-    public function getSQLDeclaration(array $field, AbstractPlatform $platform)
+    public function getSQLDeclaration(array $field, AbstractPlatform $platform): string
     {
         return 'tinyblob';
     }
