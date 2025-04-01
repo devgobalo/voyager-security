@@ -190,7 +190,9 @@ class VoyagerDatabaseController extends Controller
         $db->oldTable = $oldTable ? $oldTable : json_encode(null);
         $db->action = $action;
         $db->identifierRegex = Identifier::REGEX;
-        $db->platform = SchemaManager::getDatabasePlatform()->getName();
+        $db->platform = str_replace('Platform', '', class_basename(get_class(SchemaManager::getDatabasePlatform())));
+
+
 
         return $db;
     }
