@@ -85,6 +85,7 @@
                         </select><br>
                         <div id="m_url_type">
                             <label for="url">{{ __('voyager::menu_builder.url') }}</label>
+                            @include('voyager::multilingual.input-hidden', ['_field_name' => 'url', '_field_trans' => ''])
                             <input type="text" class="form-control" id="m_url" name="url" placeholder="{{ __('voyager::generic.url') }}"><br>
                         </div>
                         <div id="m_route_type">
@@ -94,7 +95,7 @@
                             <textarea rows="3" class="form-control" id="m_parameters" name="parameters" placeholder="{{ json_encode(['key' => 'value'], JSON_PRETTY_PRINT) }}"></textarea><br>
                         </div>
                         <label for="icon_class">{{ __('voyager::menu_builder.icon_class') }} <a
-                                    href="{{ route('voyager.compass.index') }}#fonts"
+                                    href="{{ route('voyager.compass.index', [], false) }}#fonts"
                                     target="_blank">{!! __('voyager::menu_builder.icon_class2') !!}</label>
                         <input type="text" class="form-control" id="m_icon_class" name="icon_class"
                                placeholder="{{ __('voyager::menu_builder.icon_class_ph') }}"><br>
@@ -165,6 +166,7 @@
                 $m_title_i18n  = $('#title_i18n'),
                 $m_url_type    = $('#m_url_type'),
                 $m_url         = $('#m_url'),
+                $m_url_i18n  = $('#url_i18n'),
                 $m_link_type   = $('#m_link_type'),
                 $m_route_type  = $('#m_route_type'),
                 $m_route       = $('#m_route'),
@@ -198,7 +200,8 @@
                 var _adding      = e.relatedTarget.data ? false : true,
                     translatable = $m_modal.data('multilingual'),
                     $_str_i18n   = '';
-
+                    $_strurl_i18n = "";
+                    //console.log(translatable);
                 if (_adding) {
                     $m_form.attr('action', $m_form.data('action-add'));
                     $m_form_method.val('POST');
@@ -206,7 +209,7 @@
                     $m_hd_edit.hide();
                     $m_target.val('_self').change();
                     $m_link_type.val('url').change();
-                    $m_url.val('');
+                    //$m_url.val('');
                     $m_icon_class.val('');
 
                 } else {
@@ -225,9 +228,12 @@
                     $m_icon_class.val(_src.data('icon_class'));
                     $m_color.val(_src.data('color'));
                     $m_id.val(id);
-
+                    
                     if(translatable){
+                        
                         $_str_i18n = $("#title" + id + "_i18n").val();
+                         $_strurl_i18n = $("#url" + id + "_i18n").val();
+                        // alert(#title49_i18n);
                     }
 
                     if (_src.data('target') == '_self') {
@@ -255,6 +261,7 @@
 
                 if (translatable) {
                     $m_title_i18n.val($_str_i18n);
+                    $m_url_i18n.val($_strurl_i18n);
                     translatable.refresh();
                 }
             });
@@ -288,12 +295,16 @@
              * Reorder items
              */
             $('.dd').on('change', function (e) {
+                //alert(JSON.stringify($('.dd').nestable('serialize')));
                 $.post('{{ route('voyager.menus.order_item',['menu' => $menu->id]) }}', {
                     order: JSON.stringify($('.dd').nestable('serialize')),
                     _token: '{{ csrf_token() }}'
                 }, function (data) {
+                    
                     toastr.success("{{ __('voyager::menu_builder.updated_order') }}");
-                });
+                }).fail(function(error) {
+    //alert(JSON.stringify(error));
+  });
             });
         });
     </script>
