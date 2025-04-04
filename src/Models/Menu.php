@@ -105,16 +105,12 @@ class Menu extends Model
         \Cache::forget('voyager_menu_'.$this->name);
     }
 
-    protected static function processItems($items)
+   private static function processItems($items)
     {
-        // Eagerload Translations
-        if (config('voyager.multilingual.enabled')) {
-            $items->load('translations');
-        }
-
         $items = $items->transform(function ($item) {
             // Translate title
             $item->title = $item->getTranslatedAttribute('title');
+            $item->url = $item->getTranslatedAttribute('url');
             // Resolve URL/Route
             $item->href = $item->link(true);
 
@@ -158,4 +154,5 @@ class Menu extends Model
 
         return $items->values();
     }
+
 }
