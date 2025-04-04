@@ -74,7 +74,7 @@ class VoyagerMenuController extends Controller
             ]);
     }
 
-    public function update_item(Request $request)
+    public function update_item(Request $request,$menuId)
     {
         $id = $request->input('id');
         $data = $this->prepareParameters(
@@ -92,6 +92,13 @@ class VoyagerMenuController extends Controller
             $menuItem->setAttributeTranslations('title', $trans[0], true);
             $url=$menuItem->setAttributeTranslations('url', $trans[1], true);
         }
+        
+        $data = array_intersect_key(
+            $data,
+            array_flip(['title', 'url', 'url_i18n', 'route', 'target', 'icon_class', 'color', 'parent_id', 'order'])
+        );
+        $data['menu_id']=$menuId;
+        
         $menuItem->update($data);
         
         return redirect()
