@@ -621,8 +621,8 @@
                 $(dropdown).parent().parent().find('.rowDrop').each(function(){
                     var selected_value = $(this).data('selected');
 
-                    var options = $.map(data, function (obj, key) {
-                        return {id: key, text: key};
+                    var options = $.map(data, function (value) {
+                        return {id: value, text: value};
                     });
 
                     $(this).empty().select2({
