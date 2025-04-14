@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use TCG\Voyager\Database\DatabaseUpdater;
+use Illuminate\Support\Facades\Schema;
 use TCG\Voyager\Database\Schema\Column;
 use TCG\Voyager\Database\Schema\Identifier;
 use TCG\Voyager\Database\Schema\SchemaManager;
@@ -244,20 +245,11 @@ class VoyagerDatabaseController extends Controller
     public function show($table)
     {
         $this->authorize('browse_database');
-
-        $additional_attributes = [];
-        $model_name = Voyager::model('DataType')->where('name', $table)->pluck('model_name')->first();
-        if (isset($model_name)) {
-            $model = app($model_name);
-            if (isset($model->additional_attributes)) {
-                foreach ($model->additional_attributes as $attribute) {
-                    $additional_attributes[$attribute] = [];
-                }
-            }
-        }
-
-        return response()->json(collect(SchemaManager::describeTable($table))->merge($additional_attributes));
+    
+        // Devuelve solo los nombres de columnas
+        return response()->json(Schema::getColumnListing($table));
     }
+
 
     /**
      * Destroy table.
@@ -281,4 +273,5 @@ class VoyagerDatabaseController extends Controller
             return back()->with($this->alertException($e));
         }
     }
+    
 }
