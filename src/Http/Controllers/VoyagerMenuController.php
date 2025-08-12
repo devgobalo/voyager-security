@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use TCG\Voyager\Facades\Voyager;
 
+
+
 class VoyagerMenuController extends Controller
 {
     public function builder($id)
@@ -26,7 +28,6 @@ class VoyagerMenuController extends Controller
         $this->authorize('delete', $item);
 
         $item->deleteAttributeTranslation('title');
-        $item->deleteAttributeTranslation('url');
 
         $item->destroy($id);
 
@@ -38,75 +39,92 @@ class VoyagerMenuController extends Controller
             ]);
     }
 
+    // --- NUEVO: saneo + whitelist ---
+    protected function sanitize(array $parameters): array
+    {
+        // 1) elimina cualquier clave “rara” (p.ej. nombres con '/')
+        foreach (array_keys($parameters) as $k) {
+            if (strpos($k, '/') !== false) {
+                unset($parameters[$k]);
+            }
+        }
+
+        // 2) acepta sólo columnas válidas para menu_items + campos i18n
+        $allowed = [
+            'id','title','title_i18n','i18n_selector',
+            'url','route','parameters','icon_class','color','target',
+            'menu_id','order','parent_id',
+        ];
+
+        return Arr::only($parameters, $allowed);
+    }
+
     public function add_item(Request $request)
     {
         $menu = Voyager::model('Menu');
-
         $this->authorize('add', $menu);
 
+        // 👇 usar sanitize
         $data = $this->prepareParameters(
-            $request->all()
+            $this->sanitize($request->all())
         );
 
         unset($data['id']);
         $data['order'] = Voyager::model('MenuItem')->highestOrderMenuItem();
 
-        // Check if is translatable
         $_isTranslatable = is_bread_translatable(Voyager::model('MenuItem'));
         if ($_isTranslatable) {
-            // Prepare data before saving the menu
             $trans = $this->prepareMenuTranslations($data);
         }
 
         $menuItem = Voyager::model('MenuItem')->create($data);
 
-        // Save menu translations
         if ($_isTranslatable) {
-            $menuItem->setAttributeTranslations('title', $trans[0], true);
-            $menuItem->setAttributeTranslations('url', $trans[1], true);
+            $menuItem->setAttributeTranslations('title', $trans, true);
         }
 
-        return redirect()
-            ->route('voyager.menus.builder', [$data['menu_id']])
-            ->with([
-                'message'    => __('voyager::menu_builder.successfully_created'),
-                'alert-type' => 'success',
-            ]);
+        return redirect()->route('voyager.menus.builder', [$data['menu_id']])
+            ->with(['message'=>__('voyager::menu_builder.successfully_created'),'alert-type'=>'success']);
     }
 
-    public function update_item(Request $request,$menuId)
+    public function update_item(Request $request)
     {
         $id = $request->input('id');
+
+        // 👇 usar sanitize
         $data = $this->prepareParameters(
-            $request->except(['id'])
+            $this->sanitize($request->except(['id']))
         );
 
         $menuItem = Voyager::model('MenuItem')->findOrFail($id);
-
         $this->authorize('edit', $menuItem->menu);
 
         if (is_bread_translatable($menuItem)) {
             $trans = $this->prepareMenuTranslations($data);
-
-            // Save menu translations
-            $menuItem->setAttributeTranslations('title', $trans[0], true);
-            $url=$menuItem->setAttributeTranslations('url', $trans[1], true);
+            $menuItem->setAttributeTranslations('title', $trans, true);
         }
-        
-        $data = array_intersect_key(
-            $data,
-            array_flip(['title', 'url', 'url_i18n', 'route', 'target', 'icon_class', 'color', 'parent_id', 'order'])
-        );
-        $data['menu_id']=$menuId;
-        
+
         $menuItem->update($data);
-        
-        return redirect()
-            ->route('voyager.menus.builder', [$menuItem->menu_id])
-            ->with([
-                'message'    => __('voyager::menu_builder.successfully_updated'),
-                'alert-type' => 'success',
-            ]);
+
+        return redirect()->route('voyager.menus.builder', [$menuItem->menu_id])
+            ->with(['message'=>__('voyager::menu_builder.successfully_updated'),'alert-type'=>'success']);
+    }
+
+    protected function prepareParameters($parameters)
+    {
+        switch (Arr::get($parameters, 'route') ? 'route' : 'url') {
+            case 'route':
+                $parameters['url'] = null;
+                break;
+            default:
+                $parameters['route'] = null;
+                $parameters['parameters'] = '';
+                break;
+        }
+
+        unset($parameters['type']); // por si llega
+
+        return $parameters;
     }
 
     public function order_item(Request $request)
@@ -128,27 +146,9 @@ class VoyagerMenuController extends Controller
                 $this->orderMenu($menuItem->children, $item->id);
             }
         }
-        
     }
 
-    protected function prepareParameters($parameters)
-    {
-        switch (Arr::get($parameters, 'type')) {
-            case 'route':
-                $parameters['url'] = null;
-                break;
-            default:
-                $parameters['route'] = null;
-                $parameters['parameters'] = '';
-                break;
-        }
-
-        if (isset($parameters['type'])) {
-            unset($parameters['type']);
-        }
-
-        return $parameters;
-    }
+    
 
     /**
      * Prepare menu translations.
@@ -160,16 +160,13 @@ class VoyagerMenuController extends Controller
     protected function prepareMenuTranslations(&$data)
     {
         $trans = json_decode($data['title_i18n'], true);
-        $trans_url = json_decode($data['url_i18n'], true);
 
         // Set field value with the default locale
         $data['title'] = $trans[config('voyager.multilingual.default', 'en')];
-        $data['url'] = $trans_url[config('voyager.multilingual.default', 'en')];
-        
+
         unset($data['title_i18n']);     // Remove hidden input holding translations
-        unset($data['url_i18n']);     // Remove hidden input holding translations
         unset($data['i18n_selector']);  // Remove language selector input radio
 
-        return array($trans,$trans_url);
+        return $trans;
     }
 }
